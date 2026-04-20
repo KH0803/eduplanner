@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-canvas: #F8F9FA;
+  --color-primary-canvas: #4A90E2;
+  --color-text-main: #2D3436;
+  --color-text-sub: #636E72;
+  --color-accent-canvas: #FF7675;
+  --color-border-canvas: #E1E4E8;
+  
+  --font-sans: 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg-canvas);
+    color: var(--color-text-main);
+  }
+}
