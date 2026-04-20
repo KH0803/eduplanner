@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-import sys, io
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-
 from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 import anthropic
@@ -10,15 +7,17 @@ import os
 import base64
 from pathlib import Path
 
-# .env 파일에서 API 키 읽기
-env_path = Path(__file__).parent / '.env'
+BASE_DIR = Path(__file__).parent
+
+# .env 파일에서 API 키 읽기 (로컬 개발용)
+env_path = BASE_DIR / '.env'
 if env_path.exists():
     for line in env_path.read_text(encoding='utf-8').splitlines():
         if '=' in line and not line.startswith('#'):
             k, v = line.split('=', 1)
             os.environ.setdefault(k.strip(), v.strip())
 
-app = Flask(__name__, static_folder='dist', static_url_path='')
+app = Flask(__name__, static_folder=str(BASE_DIR / 'dist'), static_url_path='')
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
@@ -181,9 +180,10 @@ def analyze_curriculum():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    if path and os.path.exists(os.path.join('dist', path)):
-        return send_from_directory('dist', path)
-    return send_from_directory('dist', 'index.html')
+    dist = str(BASE_DIR / 'dist')
+    if path and os.path.exists(os.path.join(dist, path)):
+        return send_from_directory(dist, path)
+    return send_from_directory(dist, 'index.html')
 
 
 if __name__ == '__main__':
