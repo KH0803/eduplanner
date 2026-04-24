@@ -5,14 +5,10 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  base: '/eduplanner/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
-    },
-  },
-  server: {
-    proxy: {
-      '/api': 'http://localhost:5002',
     },
   },
 });

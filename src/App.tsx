@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LessonPlan, Feedback } from './types';
-import { getLessonPlanFeedback } from './services/claude';
+import { getLessonPlanFeedback, getApiKey, saveApiKey } from './services/claude';
 import LessonPlanForm from './components/LessonPlanForm';
 import FeedbackView from './components/FeedbackView';
 import AnalysisView from './components/AnalysisView';
-import { GraduationCap, Home, FileText, BarChart2 } from 'lucide-react';
+import { GraduationCap, Home, FileText, BarChart2, KeyRound } from 'lucide-react';
 import { cn } from './lib/utils';
 
 type View = 'landing' | 'form' | 'feedback' | 'analysis';
@@ -14,16 +14,26 @@ export default function App() {
   const [view, setView] = useState<View>('landing');
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKeyState] = useState(getApiKey());
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyDraft, setKeyDraft] = useState('');
+
+  const handleSaveKey = () => {
+    saveApiKey(keyDraft.trim());
+    setApiKeyState(keyDraft.trim());
+    setShowKeyModal(false);
+  };
 
   const handleSubmit = async (plan: LessonPlan) => {
+    if (!getApiKey()) { setKeyDraft(''); setShowKeyModal(true); return; }
     setIsLoading(true);
     try {
       const result = await getLessonPlanFeedback(plan);
       setFeedback(result);
       setView('feedback');
-    } catch (error) {
-      console.error('Feedback error:', error);
-      alert('피드백을 가져오는 중 오류가 발생했습니다.');
+    } catch (error: any) {
+      if (error.message === 'API_KEY_MISSING') { setKeyDraft(''); setShowKeyModal(true); }
+      else alert('피드백 오류: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +88,11 @@ export default function App() {
             </li>
           ))}
         </ul>
+        <button onClick={() => { setKeyDraft(apiKey); setShowKeyModal(true); }}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-text-sub hover:bg-gray-50 transition-all">
+          <KeyRound size={18} />
+          {apiKey ? 'API 키 변경' : '🔑 API 키 설정'}
+        </button>
       </nav>
 
       {/* 메인 콘텐츠 */}
@@ -157,6 +172,32 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* API 키 모달 */}
+      {showKeyModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowKeyModal(false)}>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-2">Anthropic API 키 설정</h2>
+            <p className="text-sm text-text-sub mb-4">
+              AI 피드백을 사용하려면 Anthropic API 키가 필요합니다.<br />
+              <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" className="text-primary-canvas underline">console.anthropic.com</a>에서 발급받으세요.
+            </p>
+            <input type="password" value={keyDraft} onChange={e => setKeyDraft(e.target.value)}
+              placeholder="sk-ant-..."
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-primary-canvas" />
+            <div className="flex gap-3">
+              <button onClick={handleSaveKey}
+                className="flex-1 bg-primary-canvas text-white rounded-xl py-3 font-bold text-sm hover:opacity-90">
+                저장
+              </button>
+              <button onClick={() => setShowKeyModal(false)}
+                className="flex-1 border border-gray-200 rounded-xl py-3 font-bold text-sm hover:bg-gray-50">
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 하단 네비 (모바일) */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-border-canvas flex z-50">
